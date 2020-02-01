@@ -22,7 +22,6 @@ class CoronavirusController extends Controller {
       where: { date }
     });
     // console.log(ctx.request.body);
-    console.log(preInsert.length);
     const row = {
       date,
       value,
@@ -30,9 +29,28 @@ class CoronavirusController extends Controller {
       cure,
       ext: ext || null
     };
+    if (row.value === null) {
+      // 删除当前行数据。
+      const result = await this.app.mysql.delete('coronavirus', {
+        date
+      });
+      if (result.affectedRows === 1) {
+        ctx.body = {
+          success: true,
+          msg: '删除成功',
+          result: preInsert
+        };
+        return;
+      }
+      ctx.body = {
+        success: false,
+        errMsg: '删除失败，无当天数据。',
+        result: preInsert
+      };
+      return;
+    }
     if (preInsert && preInsert.length) {
       // 存在当前日期数据，则更新当前日期数据；
-
       const result = await this.app.mysql.update('coronavirus', {
         id: preInsert[0].id,
         ...row
