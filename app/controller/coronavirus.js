@@ -4,22 +4,70 @@ const Controller = require('egg').Controller;
 
 class CoronavirusController extends Controller {
   async index() {
-    const { ctx } = this;
+    const { ctx, app } = this;
+    const res = await app.mysql.query(`
+      SELECT *, DATE_FORMAT(date, '%Y-%m-%d') as date FROM coronavirus ORDER BY date ASC LIMIT 0, 50
+    `);
     ctx.body = {
       success: true,
-      result: [
-        { date: '2020-01-22', value: 571, died: 17, cure: 0 },
-        { date: '2020-01-23', value: 830, died: 25, cure: 0 },
-        { date: '2020-01-24', value: 1287, died: 41, cure: 38 },
-        { date: '2020-01-25', value: 1975, died: 56, cure: 49 },
-        { date: '2020-01-26', value: 2744, died: 80, cure: 51 },
-        { date: '2020-01-27', value: 4515, died: 106, cure: 60 },
-        { date: '2020-01-28', value: 5974, died: 132, cure: 103 },
-        { date: '2020-01-29', value: 7711, died: 170, cure: 124 },
-        { date: '2020-01-30', value: 9692, died: 213, cure: 171 },
-        { date: '2020-01-31', value: 11791, died: 259, cure: 243 }
-      ]
+      result: res
     };
+  }
+
+  async insertData() {
+    const { ctx, app } = this;
+    const { date, value, died, cure, ext } = ctx.request.body;
+
+    const preInsert = await app.mysql.select('coronavirus', {
+      where: { date }
+    });
+    // console.log(ctx.request.body);
+    console.log(preInsert.length);
+    const row = {
+      date,
+      value,
+      died,
+      cure,
+      ext: ext || null
+    };
+    if (preInsert && preInsert.length) {
+      // 存在当前日期数据，则更新当前日期数据；
+
+      const result = await this.app.mysql.update('coronavirus', {
+        id: preInsert[0].id,
+        ...row
+      });
+      if (result.affectedRows === 1) {
+        // 更新成功。
+        ctx.body = {
+          success: true,
+          msg: '操作成功',
+          result: preInsert
+        };
+        return;
+      }
+      // 更新失败。
+      ctx.body = {
+        success: false,
+        msg: '操作失败',
+        result: preInsert
+      };
+      return;
+    }
+    const res = await app.mysql.insert('coronavirus', row);
+    if (res.affectedRows === 1) {
+      ctx.body = {
+        success: true,
+        msg: '操作成功',
+        result: res
+      };
+    } else {
+      ctx.body = {
+        success: true,
+        msg: '操作失败',
+        result: res
+      };
+    }
   }
 }
 
