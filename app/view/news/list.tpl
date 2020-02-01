@@ -1,6 +1,6 @@
 <html>
   <head>
-    <title>Hacker News</title>
+    <title>测试模板渲染</title>
     <link rel="stylesheet" href="/public/css/news.css"/>
   </head>
   <body>
